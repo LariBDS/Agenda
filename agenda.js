@@ -22,7 +22,7 @@ const {
 const bot = new Telegraf ('649960004:AAHGpnZBAry7uy9XdXBOsIefMiqur-2dEQU')
 bot.start(ctx =>{
     const nome = ctx.update.message.from.first_name
-    ctx.reply(`Seja bem vindo, ${nome}!`)    
+    ctx.reply(`Seja bem vindo, ${nome}! \nEscreva nova (nome da sua tarefa) , para adicionar a sua tarefa na agenda! Mais instruções em /help.`)    
 })
 
 const formatarData = data =>
@@ -35,7 +35,7 @@ const exibirTarefa = async (ctx, tarefaId, novaMsg = false) => {
     const msg = `  
         <b>${tarefa.descricao}</b>
         <b>Previsao:</b> ${formatarData(tarefa.dt_previsao)}${conclusao}
-        <b>Observacoes:</b>\n${tarefa.observacao || ''}
+        <b>Observacoes:</b> ${tarefa.observacao || ''}
     `
     if (novaMsg){
         ctx.reply(msg, botoesTarefa(tarefaId))
@@ -85,6 +85,13 @@ bot.command('concluidas', async ctx => {
 bot.command('tarefas', async ctx => {
     const tarefas = await getTarefas()
     ctx.reply('Estas são as tarefas sem data definida!', botoesAgenda(tarefas))
+})
+bot.command('todas', async ctx =>{
+    const tarefas = await getAgenda(moment().add({month: 99}))
+    ctx.reply('Aqui está a sua agenda !', botoesAgenda(tarefas))
+})
+bot.command('help',async ctx =>{
+    ctx.reply("/dia - mostra todas as tarefas do dia de hoje.\n/amanha - mostra todas as tarefas do dia para amanhã\n/semana - mostra todas as tarefas da semana\n/mes - mostra todas as tarefas do mês\n/concluidas - mostra todas as tarefas concluidas\n/tarefas - mostra todas as tarefas sem data definida\n/todas - mostra todas as tarefas")
 })
 
 //------ Ações bot
@@ -178,10 +185,11 @@ obsScene.on('text', async ctx =>{
 
 //---------Inserir Tarefa
 
-bot.on('text', async ctx => {
+bot.hears(/nova +[a-z]/gi, async ctx => {
     try{
-        const tarefa = await incluirTarefa(ctx.update.message.text)
+        const tarefa = await incluirTarefa(ctx.update.message.text.slice(5.,ctx.update.message.text.length))
         await exibirTarefa(ctx,tarefa.id, true)
+
     }catch(err){    
         console.log(err)
     }
